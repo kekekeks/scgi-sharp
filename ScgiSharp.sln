@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScgiSharp", "ScgiSharp\ScgiSharp.csproj", "{7F82982A-926C-435D-B242-5D8815D63DE1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sandbox", "Sandbox\Sandbox.csproj", "{976869A4-51D7-4BD6-BEE7-1DD0A3A9D095}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScgiSharp.Nancy", "ScgiSharp.Nancy\ScgiSharp.Nancy.csproj", "{CC11D39D-154C-41BE-A656-B51291AFE407}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7F82982A-926C-435D-B242-5D8815D63DE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F82982A-926C-435D-B242-5D8815D63DE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F82982A-926C-435D-B242-5D8815D63DE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F82982A-926C-435D-B242-5D8815D63DE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{976869A4-51D7-4BD6-BEE7-1DD0A3A9D095}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{976869A4-51D7-4BD6-BEE7-1DD0A3A9D095}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{976869A4-51D7-4BD6-BEE7-1DD0A3A9D095}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{976869A4-51D7-4BD6-BEE7-1DD0A3A9D095}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC11D39D-154C-41BE-A656-B51291AFE407}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC11D39D-154C-41BE-A656-B51291AFE407}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC11D39D-154C-41BE-A656-B51291AFE407}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC11D39D-154C-41BE-A656-B51291AFE407}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
