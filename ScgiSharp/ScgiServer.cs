@@ -4,21 +4,35 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using ScgiSharp.IO;
 
 namespace ScgiSharp
 {
 	public class ScgiServer
 	{
-		TcpListener _listener;
-		public void Listen (IPAddress address, int port, int backlog)
+		readonly ISocketListener _listener;
+
+		public ScgiServer (ISocketListener listener)
 		{
-			_listener = new TcpListener (address, port);
-			_listener.Start (backlog);
+			_listener = listener;
 		}
 
+		public ScgiServer ()
+			: this (new DefaultSocketListener ())
+		{
+
+		}
+
+
+		public void Listen (IPAddress address, int port, int backlog)
+		{
+			_listener.Listen (address, port, backlog);
+		}
+
+		
 		public async Task<ScgiConnection> AcceptConnectionAsync ()
 		{
-			var client = await _listener.AcceptSocketAsync ();
+			var client = await _listener.AcceptSocket ();
 			return new ScgiConnection (client);
 		}
 	}

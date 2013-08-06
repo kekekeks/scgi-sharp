@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using ScgiSharp.IO;
 
 namespace ScgiSharp
 {
@@ -23,12 +24,12 @@ namespace ScgiSharp
 			return string.Join ("-", header.Split ('_').Select (CapitalizeWord));
 		}
 
-		public static async Task ReadDataAsync (Socket socket, Stream to, long size, int bufferSize = 8192)
+		public static async Task ReadDataAsync (ISocket socket, Stream to, long size, int bufferSize = 8192)
 		{
 			var buffer = new byte[bufferSize];
 			while (size > 0)
 			{
-				var read = await RecieveAsync (socket, buffer, 0, bufferSize);
+				var read = await socket.RecieveAsync (buffer, 0, bufferSize);
 				if (read <= 0)
 					throw new IOException ("Unexpected end of stream");
 				size -= read;
@@ -36,14 +37,14 @@ namespace ScgiSharp
 			}
 		}
 
-		public static async Task<byte[]> ReadExactly (Socket stream, int size)
+		public static async Task<byte[]> ReadExactly (ISocket stream, int size)
 		{
 			var ms = new MemoryStream (size);
 			await ReadDataAsync (stream, ms, size, size);
 			return ms.ToArray ();
 		}
 
-		public static async Task WriteDataAsync (Socket socket, Stream from, long size, int bufferSize = 8192)
+		public static async Task WriteDataAsync (ISocket socket, Stream from, long size, int bufferSize = 8192)
 		{
 			var buffer = new byte[bufferSize];
 			while (size > 0)
@@ -57,7 +58,7 @@ namespace ScgiSharp
 			}
 		}
 
-		public static async Task WriteDataAsync (Socket socket, byte[] buffer, int size = -1)
+		public static async Task WriteDataAsync (ISocket socket, byte[] buffer, int size = -1)
 		{
 			if (size == -1)
 				size = buffer.Length;
@@ -71,19 +72,6 @@ namespace ScgiSharp
 		}
 		
 
-		static Task<T> FromAsync<T> (Func<AsyncCallback, object, IAsyncResult> begin, Func<IAsyncResult, T> end)
-		{
-			return Task.Factory.FromAsync<T> (begin, end, null);
-		}
-		
-		public static Task<int> RecieveAsync (this Socket socket, byte[] buffer, int offset, int size)
-		{
-			return FromAsync ((cb, state) => socket.BeginReceive (buffer, offset, size, SocketFlags.None, cb, state), socket.EndReceive);
-		}
 
-		public static Task<int> SendAsync (this Socket socket, byte[] buffer, int offset, int size)
-		{
-			return FromAsync ((cb, state) => socket.BeginSend (buffer, offset, size, SocketFlags.None, cb, state), socket.EndSend);
-		}
 	}
 }

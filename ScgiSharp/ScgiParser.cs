@@ -5,12 +5,13 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using ScgiSharp.IO;
 
 namespace ScgiSharp
 {
 	static class ScgiParser
 	{
-		public static async Task<IEnumerable<KeyValuePair<string, string>>> GetHeaders (Socket socket)
+		public static async Task<IEnumerable<KeyValuePair<string, string>>> GetHeaders (ISocket socket)
 		{
 			byte[] lenBuffer = await Util.ReadExactly (socket, 10);
 			

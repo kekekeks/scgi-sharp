@@ -6,19 +6,20 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using ScgiSharp.IO;
 
 namespace ScgiSharp
 {
 	public class ScgiConnection : IDisposable
 	{
 
-		readonly Socket _socket;
+		readonly ISocket _socket;
 
 		bool _requestIsAlreadyRead;
 		bool _responseIsAlreadySent;
 		bool _closed;
 
-		public ScgiConnection (Socket cl)
+		public ScgiConnection (ISocket cl)
 		{
 			_socket = cl;
 		}
@@ -81,7 +82,6 @@ namespace ScgiSharp
 		{
 			if (_closed)
 				return;
-			_socket.Shutdown (SocketShutdown.Send);
 			_socket.Close ();
 			_closed = true;
 		}

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Linq;
@@ -9,9 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Nancy;
 using Nancy.Bootstrapper;
-using Nancy.Extensions;
-using Nancy.Helpers;
 using Nancy.IO;
+using ScgiSharp.IO;
 using HttpStatusCode = System.Net.HttpStatusCode;
 
 
@@ -19,14 +17,20 @@ namespace ScgiSharp.Nancy
 {
     public class ScgiNancyHost
     {
-		ScgiServer _server = new ScgiServer ();
+		readonly ScgiServer _server;
 	    readonly INancyEngine _engine;
 
-	    public ScgiNancyHost (INancyBootstrapper bootstrapper)
+	    public ScgiNancyHost (INancyBootstrapper bootstrapper, ISocketListener socketListener = null)
 		{
+			if (socketListener == null)
+				socketListener = new DefaultSocketListener ();
+			_server = new ScgiServer (socketListener);
+
 			bootstrapper.Initialise ();
 			_engine = bootstrapper.GetEngine ();
 		}
+
+
 
 		public void Start (IPAddress address, int port, int backlog = 64)
 		{
