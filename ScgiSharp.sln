@@ -26,6 +26,9 @@ Global
 		{CC11D39D-154C-41BE-A656-B51291AFE407}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CC11D39D-154C-41BE-A656-B51291AFE407}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = Sandbox\Sandbox.csproj
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
