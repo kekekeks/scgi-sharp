@@ -9,6 +9,7 @@ using Nancy;
 using ScgiSharp;
 using ScgiSharp.Nancy;
 using HttpStatusCode = System.Net.HttpStatusCode;
+using ScgiSharp.IO;
 
 namespace Sandbox
 {
@@ -33,13 +34,20 @@ namespace Sandbox
 
 		static void NancyServer ()
 		{
-			new ScgiNancyHost (new DefaultNancyBootstrapper ()).Start (IPAddress.Any, 10081);
+			new ScgiNancyHost (new DefaultNancyBootstrapper (), CreateListener ()).Start (IPAddress.Any, 10081);
 			Thread.Sleep (-1);
+		}
+
+		static ScgiSharp.IO.ISocketListener CreateListener ()
+		{
+			return Environment.GetCommandLineArgs ().Contains ("--libevent") ?
+			        (ISocketListener)new ScgiSharp.OarsIo.OarsSocketListener () :
+					new DefaultSocketListener ();
 		}
 
 		static void EchoServer ()
 		{
-			var server = new ScgiSharp.ScgiServer ();
+			var server = new ScgiSharp.ScgiServer (CreateListener ());
 			server.Listen (IPAddress.Any, 10081, 64);
 			while (true)
 			{
@@ -47,7 +55,6 @@ namespace Sandbox
 				task.Wait ();
 				Process (task.Result);
 			}
-
 		}
 
 		private static async void Process (ScgiConnection conn)

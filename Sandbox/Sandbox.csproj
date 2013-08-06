@@ -25,6 +25,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <Commandlineparameters>--libevent</Commandlineparameters>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -61,6 +62,10 @@
     <ProjectReference Include="..\ScgiSharp\ScgiSharp.csproj">
       <Project>{7F82982A-926C-435D-B242-5D8815D63DE1}</Project>
       <Name>ScgiSharp</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ScgiSharp.Oars\ScgiSharp.Oars.csproj">
+      <Project>{A3DF663D-F6E8-4F0A-9B97-E6EB9BB29EC0}</Project>
+      <Name>ScgiSharp.Oars</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

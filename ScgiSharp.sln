@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sandbox", "Sandbox\Sandbox.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScgiSharp.Nancy", "ScgiSharp.Nancy\ScgiSharp.Nancy.csproj", "{CC11D39D-154C-41BE-A656-B51291AFE407}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScgiSharp.Oars", "ScgiSharp.Oars\ScgiSharp.Oars.csproj", "{A3DF663D-F6E8-4F0A-9B97-E6EB9BB29EC0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{976869A4-51D7-4BD6-BEE7-1DD0A3A9D095}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{976869A4-51D7-4BD6-BEE7-1DD0A3A9D095}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{976869A4-51D7-4BD6-BEE7-1DD0A3A9D095}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3DF663D-F6E8-4F0A-9B97-E6EB9BB29EC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3DF663D-F6E8-4F0A-9B97-E6EB9BB29EC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3DF663D-F6E8-4F0A-9B97-E6EB9BB29EC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3DF663D-F6E8-4F0A-9B97-E6EB9BB29EC0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CC11D39D-154C-41BE-A656-B51291AFE407}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CC11D39D-154C-41BE-A656-B51291AFE407}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC11D39D-154C-41BE-A656-B51291AFE407}.Release|Any CPU.ActiveCfg = Release|Any CPU

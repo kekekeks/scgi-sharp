@@ -110,7 +110,7 @@ namespace ScgiSharp.Nancy
 
 	    protected virtual Request ConvertScgiRequestToNancyRequest (ScgiRequest request)
 	    {
-			return new Request (request.Method, request.Path, request.Headers.ToDictionary (h => h.Key, h => (IEnumerable<string>)h.Value), RequestStream.FromStream (request.Body, request.ContentLength, request.ContentLength), request.Scheme, request.QueryString, request.RemoteAddress);
+			return new Request (request.Method, request.Path, request.Headers.ToDictionary (h => h.Key, h => (IEnumerable<string>)h.Value), RequestStream.FromStream (request.Body, request.ContentLength, long.MaxValue), request.Scheme, request.QueryString, request.RemoteAddress);
 	    }
 		
 		protected virtual void PostProcessNancyResponse (Response response)
