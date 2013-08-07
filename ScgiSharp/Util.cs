@@ -32,7 +32,7 @@ namespace ScgiSharp
 			{
 				if (size <= 0)
 					return TaskFromResult (0);
-				return socket.RecieveAsync (buffer, 0, bufferSize).ContinueWith (t =>
+				return socket.RecieveAsync (buffer, 0, (int)Math.Min (bufferSize, size)).ContinueWith (t =>
 				{
 					t.PropagateExceptions ();
 					var read = t.Result;
