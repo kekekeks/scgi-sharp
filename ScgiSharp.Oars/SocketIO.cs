@@ -12,30 +12,30 @@ namespace ScgiSharp.OarsIo
 
 		public static int Recv (this IntPtr fd, ArraySegment<byte> buffer, int flags)
 		{
-			unsafe
-			{
-				fixed (byte* ptr = &(buffer.Array[buffer.Offset]))
-					return recv (fd, ptr, buffer.Count, flags);
-			}
+			var handle = GCHandle.Alloc (buffer.Array, GCHandleType.Pinned);
+			var ptr = handle.AddrOfPinnedObject () + buffer.Offset;
+			var rv = recv (fd, ptr, buffer.Count, flags);
+			handle.Free ();
+			return rv;
 		}
 
 		public static int Send (this IntPtr fd, ArraySegment<byte> buffer, int flags)
 		{
-			unsafe
-			{
-				fixed (byte *ptr = &(buffer.Array[buffer.Offset]))
-					return send (fd, ptr, buffer.Count, flags);
-			}
+			var handle = GCHandle.Alloc (buffer.Array, GCHandleType.Pinned);
+			var ptr = handle.AddrOfPinnedObject () + buffer.Offset;
+			var rv = send (fd, ptr, buffer.Count, flags);
+			handle.Free ();
+			return rv;
 		}
 
 		[DllImport("libc", SetLastError = true)]
 		static extern int close (IntPtr fd);
 
 		[DllImport("libc", SetLastError = true)]
-		static unsafe extern int send (IntPtr fd, byte* buffer, int length, int flags);
+		static unsafe extern int send (IntPtr fd, IntPtr buffer, int length, int flags);
 
 		[DllImport("libc", SetLastError = true)]
-		static unsafe extern int recv (IntPtr fd, byte* buffer, int length, int flags);
+		static unsafe extern int recv (IntPtr fd, IntPtr buffer, int length, int flags);
 	
 		
 		public const int MSG_DONTWAIT = 0x40;

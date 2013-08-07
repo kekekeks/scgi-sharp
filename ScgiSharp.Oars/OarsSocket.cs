@@ -12,60 +12,81 @@ namespace ScgiSharp.OarsIo
 		IntPtr _socket;
 		OarsSocketListener _host;
 
+		bool _busy;
+
 		public OarsSocket (IntPtr socket, OarsSocketListener host)
 		{
 			_socket = socket;
 			_host = host;
 		}
 
-
-
 		Task<int> DoSocketOpAsync (SocketIO.SocketOp op, Oars.Events events, byte[] buffer, int offset, int size)
 		{
-			if (_socket == IntPtr.Zero)
-				throw new InvalidOperationException ("Socket is closed or disposed");
-		
-			var segment = new ArraySegment<byte> (buffer, offset, size);
-			var read = op (_socket, segment, SocketIO.MSG_DONTWAIT);
-			if (read == -1)
+			lock (this)
 			{
-				var errno = Marshal.GetLastWin32Error ();
-				if (errno != Errno.EAGAIN)
+				if (_socket == IntPtr.Zero)
+					throw new InvalidOperationException ("Socket is closed or disposed");
+		
+				var segment = new ArraySegment<byte> (buffer, offset, size);
+				var read = op (_socket, segment, SocketIO.MSG_DONTWAIT);
+				if (read == -1)
 				{
-					if (errno == Errno.EPIPE)
-						return Task<int>.FromResult (0);
-					throw new IOException ("Error #" + errno + " on socket");
-				}
-
-				var tcs = new TaskCompletionSource<int> ();
-				CallMeOnEvent (events, () =>
-				{
-					read = op (_socket, segment, SocketIO.MSG_DONTWAIT);
-					if (read != -1)
+					var errno = Marshal.GetLastWin32Error ();
+					if (errno != Errno.EAGAIN)
 					{
-						tcs.SetResult (read);
-						return;
+						if (errno == Errno.EPIPE && events == Oars.Events.EV_READ)
+							return Task<int>.FromResult (0);
+						throw new IOException ("Error #" + errno + " on socket");
 					}
-					errno = Marshal.GetLastWin32Error ();
-					if (errno == Errno.EPIPE)
-						tcs.SetResult (0);
-					else
-						tcs.SetException (new IOException ("Error #" + errno + " on socket"));
-				});
-				return tcs.Task;
+
+					var tcs = new TaskCompletionSource<int> ();
+					CallMeOnEvent (events, () =>
+					{
+						read = op (_socket, segment, SocketIO.MSG_DONTWAIT);
+						if (read != -1)
+						{
+							tcs.SetResult (read);
+							return;
+						}
+						errno = Marshal.GetLastWin32Error ();
+						if (errno == Errno.EPIPE)
+							tcs.SetResult (0);
+						else
+							tcs.SetException (new IOException ("Error #" + errno + " on socket"));
+					});
+					return tcs.Task;
+				}
+				else
+					return Task<int>.FromResult (read);
 			}
-			else
-				return Task<int>.FromResult (read);
+		}
+
+		async Task<int> DoSocketOpAsyncWithCheck (SocketIO.SocketOp op, Oars.Events events, byte[] buffer, int offset, int size)
+		{
+			lock (this)
+			{
+				if (_busy)
+					throw new InvalidOperationException ("Busy");
+				_busy = true;
+			}
+			try
+			{
+				return await DoSocketOpAsync (op, events, buffer, offset, size);
+			} finally
+			{
+				lock (this)
+					_busy = false;
+			}
 		}
 
 		public Task<int> RecieveAsync (byte[] buffer, int offset, int size)
 		{
-			return DoSocketOpAsync (SocketIO.Recv, Oars.Events.EV_READ, buffer, offset, size);
+			return DoSocketOpAsyncWithCheck (SocketIO.Recv, Oars.Events.EV_READ, buffer, offset, size);
 		}
 
 		public Task<int> SendAsync (byte[] buffer, int offset, int size)
 		{
-			return DoSocketOpAsync (SocketIO.Send, Oars.Events.EV_WRITE, buffer, offset, size);
+			return DoSocketOpAsyncWithCheck (SocketIO.Send, Oars.Events.EV_WRITE, buffer, offset, size);
 		}
 
 		List<Oars.Event> _activeEvents = new List<Oars.Event> ();
@@ -74,16 +95,19 @@ namespace ScgiSharp.OarsIo
 		{
 			_host.Sync (() =>
 			{
-				var ev = new Oars.Event (_host._eventBase, _socket, events);
-				_activeEvents.Add (ev);
-				ev.Activated += () =>
+				lock (this)
 				{
-					ev.Delete ();
-					ev.Dispose ();
-					act ();
-					_activeEvents.Remove (ev);
-				};
-				ev.Add (new TimeSpan (7, 1, 1, 1));
+					var ev = new Oars.Event (_host._eventBase, _socket, events);
+					_activeEvents.Add (ev);
+					ev.Activated += () =>
+					{
+						ev.Delete ();
+						ev.Dispose ();
+						act ();
+						_activeEvents.Remove (ev);
+					};
+					ev.Add (new TimeSpan (7, 1, 1, 1));
+				}
 			});
 
 		}
@@ -95,19 +119,22 @@ namespace ScgiSharp.OarsIo
 
 		public void Dispose ()
 		{
-			if (_socket == IntPtr.Zero)
-				return;
-			var socket = _socket;
-			_socket = IntPtr.Zero;
-			_host.Sync (() =>
+			lock (this)
 			{
-				foreach (var e in _activeEvents)
+				if (_socket == IntPtr.Zero)
+					return;
+				var socket = _socket;
+				_socket = IntPtr.Zero;
+				_host.Sync (() =>
 				{
-					e.Delete ();
-					e.Dispose ();
-				}
-				SocketIO.Close (socket);
-			});
+					foreach (var e in _activeEvents)
+					{
+						e.Delete ();
+						e.Dispose ();
+					}
+					SocketIO.Close (socket);
+				});
+			}
 		}
 	}
 }

@@ -128,11 +128,7 @@ namespace ScgiSharp.Nancy
 				await conn.SendResponse ((HttpStatusCode)(int)response.StatusCode, response.Headers, body);
 				conn.Close ();
 			}
-			catch (IOException e)
-			{
-				if (!(e.InnerException is SocketException)) //Ignore closed socket exceptions
-					LogException (e);
-			}
+			catch (IOException) { }
 			catch (SocketException) { }
 			catch (Exception e)
 			{
