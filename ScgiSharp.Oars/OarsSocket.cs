@@ -49,7 +49,7 @@ namespace ScgiSharp.OarsIo
 							return;
 						}
 						errno = Marshal.GetLastWin32Error ();
-						if (errno == Errno.EPIPE)
+						if (errno == Errno.EPIPE && events == Oars.Events.EV_READ)
 							tcs.SetResult (0);
 						else
 							tcs.SetException (new IOException ("Error #" + errno + " on socket"));
