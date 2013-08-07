@@ -30,10 +30,13 @@ namespace ScgiSharp
 		}
 
 		
-		public async Task<ScgiConnection> AcceptConnectionAsync ()
+		public Task<ScgiConnection> AcceptConnectionAsync ()
 		{
-			var client = await _listener.AcceptSocket ();
-			return new ScgiConnection (client);
+			return _listener.AcceptSocket ().ContinueWith (t =>
+			{
+				t.PropagateExceptions ();
+				return new ScgiConnection (t.Result);
+			});
 		}
 	}
 }

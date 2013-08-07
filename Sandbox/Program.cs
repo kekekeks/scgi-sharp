@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Linq;
+using System.Threading.Tasks;
 using Nancy;
 using ScgiSharp;
 using ScgiSharp.Nancy;
@@ -40,9 +41,9 @@ namespace Sandbox
 
 		static ScgiSharp.IO.ISocketListener CreateListener ()
 		{
-			return Environment.GetCommandLineArgs ().Contains ("--libevent") ?
-			        (ISocketListener)new ScgiSharp.OarsIo.OarsSocketListener () :
-					new DefaultSocketListener ();
+			//return Environment.GetCommandLineArgs ().Contains ("--libevent") ?
+		//	        (ISocketListener)new ScgiSharp.OarsIo.OarsSocketListener () :
+					return new DefaultSocketListener ();
 		}
 
 		static void EchoServer ()
@@ -57,11 +58,11 @@ namespace Sandbox
 			}
 		}
 
-		private static async void Process (ScgiConnection conn)
+		private static void Process (ScgiConnection conn)
 		{
-			using (conn)
+			conn.ReadRequestAsync ().ContinueWith (tread =>
 			{
-				var req = await conn.ReadRequest ();
+				var req = tread.Result;
 				var echoResponse = new StringWriter ();
 				echoResponse.WriteLine ("Method: {0}\nPath: {1}\nQueryString: {2}\nLocalPort: {3}\nRemoteAddress: {4}\nRemotePort: {5}\nScheme: {6}", req.Method, req.Path, req.QueryString, req.LocalPort, req.RemoteAddress, req.RemotePort, req.Scheme);
 
@@ -73,9 +74,11 @@ namespace Sandbox
 						echoResponse.WriteLine ("\t{0}", v);
 				}
 
-
-
-				await conn.SendResponse (HttpStatusCode.OK, new Dictionary<string, string> (), Encoding.UTF8.GetBytes (echoResponse.ToString ()));
-			}
+				return conn.SendResponse (HttpStatusCode.OK, new Dictionary<string, string> (), Encoding.UTF8.GetBytes (echoResponse.ToString ()));
+			}).Unwrap ().ContinueWith (tres =>
+				{
+					conn.Close ();
+					conn.Dispose ();
+				});
 		}
 	}}

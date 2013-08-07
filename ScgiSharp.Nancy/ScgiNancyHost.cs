@@ -50,62 +50,58 @@ namespace ScgiSharp.Nancy
 
 	    }
 
-	    async void ProcessConnection (ScgiConnection connection)
-	    {
-		    using (connection)
-		    {
-				ScgiRequest request = null;
-
-				try
+		void ProcessConnection (ScgiConnection connection)
+		{
+			connection.ReadRequestAsync ().ContinueWith (readReqTask =>
+			{
+				if (readReqTask.IsFaulted)
 				{
-					request = await connection.ReadRequest ();
-				}
-				catch (Exception e)
-				{
-					LogException (e);
+					LogException (readReqTask.Exception);
 					SendResponseFailSafeNoWait (connection, HttpStatusCode.BadRequest);
-					return;
+					return TaskFromResult (0);
 				}
-
+				var request = readReqTask.Result;
 				NancyContext context = null;
-				try
-			    {
-					await Task.Run (() =>
+
+				return Task.Factory.StartNew (() =>
+				{
+					context = _engine.HandleRequest (ConvertScgiRequestToNancyRequest (request));
+					PostProcessNancyResponse (context.Response);
+				}).ContinueWith (handlerTask =>
+				{
+					if (handlerTask.IsFaulted)
 					{
-						context = _engine.HandleRequest (ConvertScgiRequestToNancyRequest (request));
-						PostProcessNancyResponse (context.Response);
-					});
-					
-			    }
-			    catch (Exception e)
-			    {
-				    LogException (e);
-					SendResponseFailSafeNoWait (connection, HttpStatusCode.InternalServerError, null, new MemoryStream (Encoding.UTF8.GetBytes (e.ToString ())));
-				    throw;
-			    }
+						LogException (handlerTask.Exception);
+						SendResponseFailSafeNoWait (connection, HttpStatusCode.InternalServerError, null, new MemoryStream (Encoding.UTF8.GetBytes (handlerTask.Exception.ToString ())));
+						return TaskFromResult (0);
+					}
+					return SendNancyResponse (connection, context.Response);
+				}).Unwrap ();
+
+			}).Unwrap ().ContinueWith (finalTask =>
+			{
+				if (finalTask.IsFaulted)
+					LogException (finalTask.Exception);
+				connection.Dispose ();
+			});
 
 
 
-				await SendNancyResponse (connection, context.Response);
 
 
-			}
-	    }
+		}
 
-	    async void SendResponseFailSafeNoWait (ScgiConnection connection, HttpStatusCode statusCode, IEnumerable<KeyValuePair<string, string>> headers = null, MemoryStream response = null) 
+	    void SendResponseFailSafeNoWait (ScgiConnection connection, HttpStatusCode statusCode, IEnumerable<KeyValuePair<string, string>> headers = null, MemoryStream response = null) 
 		{
 			if (headers == null)
 				headers = new Dictionary<string, string> ();
 			if (response == null)
 				response = new MemoryStream ();
-			try
+			connection.SendResponse (statusCode, headers, response).ContinueWith (t =>
 			{
-				await connection.SendResponse (statusCode, headers, response);
-			}
-			catch (Exception ee)
-			{
-				LogException (ee);
-			}
+				if (t.IsFaulted)
+					LogException (t.Exception);
+			});
 		}
 
 	    protected virtual Request ConvertScgiRequestToNancyRequest (ScgiRequest request)
@@ -118,23 +114,26 @@ namespace ScgiSharp.Nancy
 			response.Headers["Content-Type"] = response.ContentType;
 		}
 
-		async Task SendNancyResponse (ScgiConnection conn, Response response)
+		Task SendNancyResponse (ScgiConnection conn, Response response)
 		{
+			var body = new MemoryStream ();
 			try
 			{
-				var body = new MemoryStream ();
 				response.Contents (body);
 				body.Seek (0, SeekOrigin.Begin);
-				await conn.SendResponse ((HttpStatusCode)(int)response.StatusCode, response.Headers, body);
-				conn.Close ();
 			}
-			catch (IOException) { }
-			catch (SocketException) { }
 			catch (Exception e)
 			{
-				LogException (e);
+				return TaskFromException<int> (e);
 			}
-		
+
+			return conn.SendResponse ((HttpStatusCode)(int)response.StatusCode, response.Headers, body).ContinueWith (t =>
+			{
+				if (t.IsFaulted)
+					if (!(t.Exception.InnerException is SocketException || t.Exception.InnerException is IOException))
+						LogException (t.Exception);
+				conn.Close ();
+			});
 			
 		}
 
@@ -143,5 +142,18 @@ namespace ScgiSharp.Nancy
 			Console.WriteLine ("Exception: {0}", e);
 		}
 
+		static Task<T> TaskFromResult<T> (T value)
+		{
+			var tcs = new TaskCompletionSource<T> ();
+			tcs.SetResult (value);
+			return tcs.Task;
+		}
+
+		static Task<T> TaskFromException<T> (Exception e)
+		{
+			var tcs = new TaskCompletionSource<T> ();
+			tcs.SetException (e);
+			return tcs.Task;
+		}
     }
 }

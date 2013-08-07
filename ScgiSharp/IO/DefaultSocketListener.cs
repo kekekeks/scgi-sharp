@@ -11,9 +11,14 @@ namespace ScgiSharp.IO
 	public class DefaultSocketListener : ISocketListener
 	{
 		TcpListener _listener;
-		public async Task<ISocket> AcceptSocket ()
+		public Task<ISocket> AcceptSocket ()
 		{
-			return new DefaultSocket (await _listener.AcceptSocketAsync ());
+			return FromAsync ((cb, s) => _listener.BeginAcceptSocket (cb, s), r => _listener.EndAcceptSocket (r)).ContinueWith (t =>
+				{
+					t.PropagateExceptions ();
+					return (ISocket)new DefaultSocket (t.Result);
+				});
+
 		}
 
 		public void Listen (IPAddress address, int port, int backlog)
@@ -30,12 +35,6 @@ namespace ScgiSharp.IO
 			public DefaultSocket (Socket socket)
 			{
 				_socket = socket;
-			}
-
-
-			static Task<T> FromAsync<T> (Func<AsyncCallback, object, IAsyncResult> begin, Func<IAsyncResult, T> end)
-			{
-				return Task.Factory.FromAsync<T> (begin, end, null);
 			}
 
 			public static Task<int> RecieveAsync (Socket socket, byte[] buffer, int offset, int size)
@@ -68,6 +67,11 @@ namespace ScgiSharp.IO
 				_socket.Shutdown (SocketShutdown.Send);
 				_socket.Dispose ();
 			}
+		}
+
+		static Task<T> FromAsync<T> (Func<AsyncCallback, object, IAsyncResult> begin, Func<IAsyncResult, T> end)
+		{
+			return Task.Factory.FromAsync<T> (begin, end, null);
 		}
 	}
 }

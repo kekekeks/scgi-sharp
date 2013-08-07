@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Sandbox</RootNamespace>
     <AssemblyName>Sandbox</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
     <ProductVersion>12.0.0</ProductVersion>
@@ -62,10 +62,6 @@
     <ProjectReference Include="..\ScgiSharp\ScgiSharp.csproj">
       <Project>{7F82982A-926C-435D-B242-5D8815D63DE1}</Project>
       <Name>ScgiSharp</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\ScgiSharp.Oars\ScgiSharp.Oars.csproj">
-      <Project>{A3DF663D-F6E8-4F0A-9B97-E6EB9BB29EC0}</Project>
-      <Name>ScgiSharp.Oars</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

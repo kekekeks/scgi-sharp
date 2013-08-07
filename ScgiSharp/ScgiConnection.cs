@@ -24,48 +24,59 @@ namespace ScgiSharp
 			_socket = cl;
 		}
 
-		public async Task<ScgiRequest> ReadRequest ()
+		public Task<ScgiRequest> ReadRequestAsync ()
 		{
 			if (_requestIsAlreadyRead)
 				throw new InvalidOperationException ("SCGI protocol doesn't allow multiple requests per connection");
 			_requestIsAlreadyRead = true;
 
-			var headers = (await ScgiParser.GetHeaders (_socket)).ToList ();
+			return ScgiParser.GetHeaders (_socket).ContinueWith (htask =>
+			{
+				htask.PropagateExceptions ();
+				var headers = htask.Result.ToList ();
 
-			var httpHeaders = headers.Where (h => h.Key.StartsWith ("HTTP_")).ToList ();
-			var scgiHeaders = headers.Where (h => !h.Key.StartsWith ("HTTP_")).ToList ();
+				var httpHeaders = headers.Where (h => h.Key.StartsWith ("HTTP_")).ToList ();
+				var scgiHeaders = headers.Where (h => !h.Key.StartsWith ("HTTP_")).ToList ();
 
-			var contentLength = long.Parse (scgiHeaders.First (h => h.Key == "CONTENT_LENGTH").Value);
-			
-			var ms = new MemoryStream ();
-			await Util.ReadDataAsync (_socket, ms, contentLength);
-			ms.Seek (0, SeekOrigin.Begin);
+				var contentLength = long.Parse (scgiHeaders.First (h => h.Key == "CONTENT_LENGTH").Value);
 
-			return new ScgiRequest (scgiHeaders, httpHeaders, ms);
+				var ms = new MemoryStream ();
+				return Util.ReadDataAsync (_socket, ms, contentLength).ContinueWith (btask =>
+				{
+					btask.PropagateExceptions ();
+
+					ms.Seek (0, SeekOrigin.Begin);
+					return Util.TaskFromResult (new ScgiRequest (scgiHeaders, httpHeaders, ms));
+				}).Unwrap ();
+			}).Unwrap ();
 		}
 
 
 
-		public async Task SendResponse (HttpStatusCode statusCode, IEnumerable<KeyValuePair<string, string>> headers, byte[] responseData)
+		public Task SendResponse (HttpStatusCode statusCode, IEnumerable<KeyValuePair<string, string>> headers, byte[] responseData)
 		{
-			await SendResponse (statusCode, headers, new MemoryStream (responseData));
-
+			return SendResponse (statusCode, headers, new MemoryStream (responseData));
 		}
 
-		public async Task SendResponse (HttpStatusCode statusCode, IEnumerable<KeyValuePair<string, string>> headers, Stream responseDataStream)
+		public Task SendResponse (HttpStatusCode statusCode, IEnumerable<KeyValuePair<string, string>> headers, Stream responseDataStream)
 		{
 			if (_responseIsAlreadySent)
 				throw new InvalidOperationException ("SCGI protocol doesn't allow multiple requests per connection");
 			_responseIsAlreadySent = true;
 
-			await SendHeaders (statusCode, headers);
-
-			await Util.WriteDataAsync (_socket, responseDataStream, responseDataStream.Length);
-			Close ();
+			return SendHeaders (statusCode, headers).ContinueWith (t =>
+			{
+				t.PropagateExceptions ();
+				return Util.WriteDataAsync (_socket, responseDataStream, responseDataStream.Length).ContinueWith (t2 =>
+					{
+						t2.PropagateExceptions ();
+						Close ();
+					});
+			}).Unwrap ();
 		}
 		
 		
-		async Task SendHeaders (HttpStatusCode statusCode, IEnumerable<KeyValuePair<string, string>> headers)
+		Task SendHeaders (HttpStatusCode statusCode, IEnumerable<KeyValuePair<string, string>> headers)
 		{
 			var writer = new StringWriter {NewLine = "\r\n"};
 			writer.WriteLine ("Status: {0} {1}", (int)statusCode, statusCode);
@@ -74,7 +85,7 @@ namespace ScgiSharp
 				writer.WriteLine ("{0}: {1}", header.Key, header.Value);
 			writer.WriteLine ();
 
-			await Util.WriteDataAsync (_socket, Encoding.UTF8.GetBytes (writer.ToString ()));
+			return Util.WriteDataAsync (_socket, Encoding.UTF8.GetBytes (writer.ToString ()));
 		}
 
 

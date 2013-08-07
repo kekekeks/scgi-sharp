@@ -35,7 +35,7 @@ namespace ScgiSharp.OarsIo
 					if (errno != Errno.EAGAIN)
 					{
 						if (errno == Errno.EPIPE && events == Oars.Events.EV_READ)
-							return Task<int>.FromResult (0);
+							return TaskFromResult (0);
 						throw new IOException ("Error #" + errno + " on socket");
 					}
 
@@ -57,11 +57,11 @@ namespace ScgiSharp.OarsIo
 					return tcs.Task;
 				}
 				else
-					return Task<int>.FromResult (read);
+					return TaskFromResult (read);
 			}
 		}
 
-		async Task<int> DoSocketOpAsyncWithCheck (SocketIO.SocketOp op, Oars.Events events, byte[] buffer, int offset, int size)
+		Task<int> DoSocketOpAsyncWithCheck (SocketIO.SocketOp op, Oars.Events events, byte[] buffer, int offset, int size)
 		{
 			lock (this)
 			{
@@ -69,14 +69,14 @@ namespace ScgiSharp.OarsIo
 					throw new InvalidOperationException ("Busy");
 				_busy = true;
 			}
-			try
-			{
-				return await DoSocketOpAsync (op, events, buffer, offset, size);
-			} finally
+			return DoSocketOpAsync (op, events, buffer, offset, size).ContinueWith (t =>
 			{
 				lock (this)
+				{
 					_busy = false;
-			}
+				}
+				return TaskFromResult (t.Result);
+			}).Unwrap ();
 		}
 
 		public Task<int> RecieveAsync (byte[] buffer, int offset, int size)
@@ -135,6 +135,13 @@ namespace ScgiSharp.OarsIo
 					SocketIO.Close (socket);
 				});
 			}
+		}
+
+		static Task<T> TaskFromResult<T> (T value)
+		{
+			var tcs = new TaskCompletionSource<T> ();
+			tcs.SetResult (value);
+			return tcs.Task;
 		}
 	}
 }
