@@ -101,10 +101,13 @@ namespace ScgiSharp.OarsIo
 					_activeEvents.Add (ev);
 					ev.Activated += () =>
 					{
-						ev.Delete ();
-						ev.Dispose ();
-						act ();
-						_activeEvents.Remove (ev);
+						lock (this)
+						{
+							ev.Delete ();
+							ev.Dispose ();
+							act ();
+							_activeEvents.Remove (ev);
+						}
 					};
 					ev.Add (new TimeSpan (7, 1, 1, 1));
 				}
