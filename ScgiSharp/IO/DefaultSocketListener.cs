@@ -64,7 +64,11 @@ namespace ScgiSharp.IO
 
 			public void Close ()
 			{
-				_socket.Shutdown (SocketShutdown.Send);
+				try
+				{
+					_socket.Shutdown (SocketShutdown.Send);
+				}
+				catch { }
 				_socket.Dispose ();
 			}
 		}
