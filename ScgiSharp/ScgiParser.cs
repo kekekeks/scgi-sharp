@@ -23,7 +23,7 @@ namespace ScgiSharp
 
 				var lenString = Encoding.UTF8.GetString (lenBuffer, 0, pos);
 
-				var len = int.Parse (lenString);
+				var len = int.Parse (lenString) + 1;
 
 
 				pos++;
