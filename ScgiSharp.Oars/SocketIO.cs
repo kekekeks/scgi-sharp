@@ -32,10 +32,10 @@ namespace ScgiSharp.OarsIo
 		static extern int close (IntPtr fd);
 
 		[DllImport("libc", SetLastError = true)]
-		static unsafe extern int send (IntPtr fd, IntPtr buffer, int length, int flags);
+		static extern int send (IntPtr fd, IntPtr buffer, int length, int flags);
 
 		[DllImport("libc", SetLastError = true)]
-		static unsafe extern int recv (IntPtr fd, IntPtr buffer, int length, int flags);
+		static extern int recv (IntPtr fd, IntPtr buffer, int length, int flags);
 	
 		
 		public const int MSG_DONTWAIT = 0x40;
