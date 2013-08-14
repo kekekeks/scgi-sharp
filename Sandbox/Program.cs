@@ -62,6 +62,8 @@ namespace Sandbox
 		{
 			conn.ReadRequestAsync ().ContinueWith (tread =>
 			{
+				if (tread.IsFaulted)
+					Console.WriteLine (tread.Exception);
 				var req = tread.Result;
 				var echoResponse = new StringWriter ();
 				echoResponse.WriteLine ("Method: {0}\nPath: {1}\nQueryString: {2}\nLocalPort: {3}\nRemoteAddress: {4}\nRemotePort: {5}\nScheme: {6}", req.Method, req.Path, req.QueryString, req.LocalPort, req.RemoteAddress, req.RemotePort, req.Scheme);
@@ -77,6 +79,8 @@ namespace Sandbox
 				return conn.SendResponse (HttpStatusCode.OK, new Dictionary<string, string> (), Encoding.UTF8.GetBytes (echoResponse.ToString ()));
 			}).Unwrap ().ContinueWith (tres =>
 				{
+					if (tres.IsFaulted)
+						Console.WriteLine (tres.Exception);
 					conn.Close ();
 					conn.Dispose ();
 				});

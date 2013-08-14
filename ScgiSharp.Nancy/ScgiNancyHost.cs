@@ -130,11 +130,26 @@ namespace ScgiSharp.Nancy
 			return conn.SendResponse ((HttpStatusCode)(int)response.StatusCode, response.Headers, body).ContinueWith (t =>
 			{
 				if (t.IsFaulted)
-					if (!(t.Exception.InnerException is SocketException || t.Exception.InnerException is IOException))
+				{
+					var e = UnwrapException(t.Exception);
+					if (!(e is SocketException || e is IOException))
 						LogException (t.Exception);
+				}
 				conn.Close ();
-			});
+				return TaskFromResult (1);
+			}).Unwrap ();
 			
+		}
+
+		Exception UnwrapException (Exception e)
+		{
+			while (true)
+			{
+				var ae = e as AggregateException;
+				if (ae == null || ae.InnerExceptions.Count > 1)
+					return e;
+				e = ae.InnerException;
+			}
 		}
 
 	    protected virtual void LogException (Exception e)

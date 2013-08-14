@@ -18,6 +18,7 @@ namespace ScgiSharp
 		bool _requestIsAlreadyRead;
 		bool _responseIsAlreadySent;
 		bool _closed;
+		bool _disposed;
 
 		public ScgiConnection (ISocket cl)
 		{
@@ -26,6 +27,7 @@ namespace ScgiSharp
 
 		public Task<ScgiRequest> ReadRequestAsync ()
 		{
+			CheckClosed ();
 			if (_requestIsAlreadyRead)
 				throw new InvalidOperationException ("SCGI protocol doesn't allow multiple requests per connection");
 			_requestIsAlreadyRead = true;
@@ -33,6 +35,7 @@ namespace ScgiSharp
 			return ScgiParser.GetHeaders (_socket).ContinueWith (htask =>
 			{
 				htask.PropagateExceptions ();
+				CheckClosed ();
 				var headers = htask.Result.ToList ();
 
 				var httpHeaders = headers.Where (h => h.Key.StartsWith ("HTTP_")).ToList ();
@@ -44,7 +47,7 @@ namespace ScgiSharp
 				return Util.ReadDataAsync (_socket, ms, contentLength).ContinueWith (btask =>
 				{
 					btask.PropagateExceptions ();
-
+					CheckClosed ();
 					ms.Seek (0, SeekOrigin.Begin);
 					return Util.TaskFromResult (new ScgiRequest (scgiHeaders, httpHeaders, ms));
 				}).Unwrap ();
@@ -60,6 +63,8 @@ namespace ScgiSharp
 
 		public Task SendResponse (HttpStatusCode statusCode, IEnumerable<KeyValuePair<string, string>> headers, Stream responseDataStream)
 		{
+			CheckClosed ();
+
 			if (_responseIsAlreadySent)
 				throw new InvalidOperationException ("SCGI protocol doesn't allow multiple requests per connection");
 			_responseIsAlreadySent = true;
@@ -67,14 +72,24 @@ namespace ScgiSharp
 			return SendHeaders (statusCode, headers).ContinueWith (t =>
 			{
 				t.PropagateExceptions ();
+				CheckClosed ();
 				return Util.WriteDataAsync (_socket, responseDataStream, responseDataStream.Length).ContinueWith (t2 =>
 					{
 						t2.PropagateExceptions ();
+						CheckClosed ();
 						Close ();
-					});
+						return Util.TaskFromResult (1);
+					}).Unwrap ();
 			}).Unwrap ();
 		}
-		
+
+		void CheckClosed ()
+		{
+			if (_disposed)
+				throw new ObjectDisposedException ("ScgiConnection");
+			if (_closed)
+				throw new InvalidOperationException ("Socket was closed by user code");
+		}
 		
 		Task SendHeaders (HttpStatusCode statusCode, IEnumerable<KeyValuePair<string, string>> headers)
 		{
@@ -99,6 +114,8 @@ namespace ScgiSharp
 		
 		public void Dispose ()
 		{
+			_closed = true;
+			_disposed = true;
 			_socket.Dispose ();
 		}
 	}
