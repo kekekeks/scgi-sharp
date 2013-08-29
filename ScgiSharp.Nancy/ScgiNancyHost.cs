@@ -50,6 +50,13 @@ namespace ScgiSharp.Nancy
 
 	    }
 
+		Task<NancyContext> HandleRequestAsync (ScgiRequest req)
+		{
+			var tcs = new TaskCompletionSource<NancyContext> ();
+			_engine.HandleRequest (ConvertScgiRequestToNancyRequest (req), tcs.SetResult, tcs.SetException);
+			return tcs.Task;
+		}
+
 		void ProcessConnection (ScgiConnection connection)
 		{
 			connection.ReadRequestAsync ().ContinueWith (readReqTask =>
@@ -61,13 +68,8 @@ namespace ScgiSharp.Nancy
 					return TaskFromResult (0);
 				}
 				var request = readReqTask.Result;
-				NancyContext context = null;
 
-				return Task.Factory.StartNew (() =>
-				{
-					context = _engine.HandleRequest (ConvertScgiRequestToNancyRequest (request));
-					PostProcessNancyResponse (context.Response);
-				}).ContinueWith (handlerTask =>
+				return HandleRequestAsync(request).ContinueWith (handlerTask =>
 				{
 					if (handlerTask.IsFaulted)
 					{
@@ -75,7 +77,7 @@ namespace ScgiSharp.Nancy
 						SendResponseFailSafeNoWait (connection, HttpStatusCode.InternalServerError, null, new MemoryStream (Encoding.UTF8.GetBytes (handlerTask.Exception.ToString ())));
 						return TaskFromResult (0);
 					}
-					return SendNancyResponse (connection, context.Response);
+					return SendNancyResponse (connection, handlerTask.Result.Response);
 				}).Unwrap ();
 
 			}).Unwrap ().ContinueWith (finalTask =>
